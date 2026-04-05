@@ -12,6 +12,7 @@ class BleSmartkeyPage extends StatefulWidget {
 class _BleSmartkeyPageState extends State<BleSmartkeyPage> {
   final BleService _bleService = BleService();
   SmartKeyStatus _status = SmartKeyStatus.idle;
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   void initState() {
@@ -51,26 +52,32 @@ class _BleSmartkeyPageState extends State<BleSmartkeyPage> {
 
   Widget _startButton() {
     return ElevatedButton(
-      onPressed: () async {
-        bool result = await _bleService.start();
-        if (result) {
-          _updateSmartKeyStatus(SmartKeyStatus.startAdvertise);
-        }
-      },
+      onPressed: () => _onStartAdvertising(),
       child: Text('Start SmartKey'),
     );
   }
 
+  Future<void> _onStartAdvertising() async {
+    final String name = _nameController.text.trim();
+
+    bool result = await _bleService.start(name.isEmpty ? 'SmartKey_001' : name);
+    if (result) {
+      _updateSmartKeyStatus(SmartKeyStatus.startAdvertise);
+    }
+  }
+
   Widget _endButton() {
     return ElevatedButton(
-      onPressed: () async {
-        bool result = await _bleService.stop();
-        if (result) {
-          _updateSmartKeyStatus(SmartKeyStatus.idle);
-        }
-      },
+      onPressed: () => _onEndAdvertising(),
       child: Text('End SmartKey'),
     );
+  }
+
+  Future<void> _onEndAdvertising() async {
+    bool result = await _bleService.stop();
+    if (result) {
+      _updateSmartKeyStatus(SmartKeyStatus.idle);
+    }
   }
 
   Widget _displayedInfoWidget() {
@@ -79,7 +86,19 @@ class _BleSmartkeyPageState extends State<BleSmartkeyPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text('Status: ${_status.name}')],
+        children: [
+          Text('Status: ${_status.name}'),
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(hintText: 'Name'),
+            onChanged: (String? value) {
+              if (_status == SmartKeyStatus.startAdvertise &&
+                  (value ?? '').isNotEmpty) {
+                _onEndAdvertising();
+              }
+            },
+          ),
+        ],
       ),
     );
   }

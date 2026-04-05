@@ -13,6 +13,7 @@ class BleService {
   static const String _serviceUuid = '12345678-1234-1234-1234-1234567890ab';
   bool _isAdvertising = false;
   BluetoothPeripheralState _state = BluetoothPeripheralState.unknown;
+  String _deviceName = '';
 
   Future<bool> onCheckSupported() async {
     bool isSupported = await _blePeripheral.isSupported;
@@ -20,18 +21,19 @@ class BleService {
     return isSupported;
   }
 
-  Future<bool> start() async {
+  Future<bool> start(String name) async {
     if (_isAdvertising) return false;
 
+    _deviceName = name;
     final advertiseData = AdvertiseData(
       serviceUuid: _serviceUuid,
-      localName: 'SmartKey_001',
+      localName: name,
       includeDeviceName: true,
     );
     _state = await _blePeripheral.start(advertiseData: advertiseData);
     AppUtil().log('BluetoothPeripheralState: $_state');
     _isAdvertising = true;
-    AppUtil().log('BLE SmartKey advertising started');
+    AppUtil().log('BLE SmartKey $_deviceName advertising started');
     return _state == BluetoothPeripheralState.granted;
   }
 
@@ -40,7 +42,7 @@ class BleService {
     _state = await _blePeripheral.stop();
     AppUtil().log('BluetoothPeripheralState: $_state');
     _isAdvertising = false;
-    AppUtil().log('BLE SmartKey advertising stopped');
+    AppUtil().log('BLE SmartKey $_deviceName advertising stopped');
     return _state == BluetoothPeripheralState.ready;
   }
 }
