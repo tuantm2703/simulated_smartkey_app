@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:simulated_smartkey_app/presentation/scan_screen.dart';
 
 import 'ble_smartkey_page.dart';
 
@@ -22,6 +23,16 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: Text('Bluetooth smartkey'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const ScanScreen(),
+                  ),
+                );
+              },
+              child: Text('Scan Screen'),
             ),
           ],
         ),

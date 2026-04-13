@@ -53,7 +53,7 @@ class _BleSmartkeyPageState extends State<BleSmartkeyPage> {
   Widget _startButton() {
     return ElevatedButton(
       onPressed: () => _onStartAdvertising(),
-      child: Text('Start SmartKey'),
+      child: Text('Start'),
     );
   }
 
@@ -69,7 +69,7 @@ class _BleSmartkeyPageState extends State<BleSmartkeyPage> {
   Widget _endButton() {
     return ElevatedButton(
       onPressed: () => _onEndAdvertising(),
-      child: Text('End SmartKey'),
+      child: Text('End'),
     );
   }
 
