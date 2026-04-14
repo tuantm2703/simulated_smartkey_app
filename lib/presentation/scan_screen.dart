@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:simulated_smartkey_app/service/app_bluetooth_service.dart';
+import 'package:simulated_smartkey_app/service/nfc_service.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -10,6 +11,7 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen> {
   final AppBluetoothService _bluetoothService = AppBluetoothService();
+  final NfcService _nfcService = NfcService();
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +20,17 @@ class _ScanScreenState extends State<ScanScreen> {
       body: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Center(child: _scanBluetoothButton())],
+        children: [
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [_scanBluetoothButton(), _scanNfcButton()],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -32,5 +44,13 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void _onScanDevice() {
     _bluetoothService.onStartScanning();
+  }
+
+  Widget _scanNfcButton() {
+    return ElevatedButton(onPressed: _onScanNfc, child: Text('Scan Nfc'));
+  }
+
+  void _onScanNfc() {
+    _nfcService.onScan();
   }
 }
