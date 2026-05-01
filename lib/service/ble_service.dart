@@ -45,4 +45,6 @@ class BleService {
     AppUtil().log('BLE SmartKey $_deviceName advertising stopped');
     return _state == BluetoothPeripheralState.ready;
   }
+
+  void handleFlow() {}
 }

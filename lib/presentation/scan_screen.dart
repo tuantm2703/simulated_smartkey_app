@@ -32,6 +32,10 @@ class _ScanScreenState extends State<ScanScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _bluetoothService.handleFlow(),
+        child: Icon(Icons.lock),
+      ),
     );
   }
 
