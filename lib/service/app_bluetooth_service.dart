@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:pointycastle/api.dart';
+import 'package:pointycastle/block/aes.dart';
+import 'package:pointycastle/block/modes/gcm.dart';
 import 'package:pointycastle/digests/sha256.dart';
 import 'package:pointycastle/ecc/api.dart';
 import 'package:pointycastle/ecc/curves/prime256v1.dart';
@@ -50,6 +52,20 @@ class AppBluetoothService {
   }
 
   Future<void> handleFlow() async {
+    List<int>? sessionKey = await _getCredentialKey();
+    if (sessionKey == null) {
+      return;
+    }
+
+    final unlocked = await _sendAction(sessionKey);
+    if (unlocked) {
+      AppUtil().log('Door unlocked!');
+    } else {
+      AppUtil().log('Access denied');
+    }
+  }
+
+  Future<List<int>?> _getCredentialKey() async {
     final lockNonce = FakeCredential.lockNonce;
     AppUtil().log('lockNonce: $lockNonce');
 
@@ -96,12 +112,13 @@ class AppBluetoothService {
     final status = result[0];
     if (status != 0x00) {
       AppUtil().log('Auth failed with status: $status');
-      return;
+      return null;
     }
 
     // 8. ECDH → sessionKey
-    final lockEphemPk = result.sublist(1, 66);
-    List<int> sessionKey = _ecdh(ephemeralKeyPair, lockEphemPk);
+    final lockEphemeralPk = result.sublist(1, 66);
+    List<int> sessionKey = _ecdh(ephemeralKeyPair, lockEphemeralPk);
+    return sessionKey;
   }
 
   List<int> _generateRandom(int length) {
@@ -211,6 +228,63 @@ class AppBluetoothService {
     // 4. Convert to 32B
     final sessionKey = _bigIntToBytes(sharedSecret, 32);
     return sessionKey; // 32B shared secret
+  }
+
+  Future<bool> _sendAction(List<int> sessionKey) async{
+    final command = [0x01]; // open command
+
+    // 2. Encrypt with AES-GCM
+    final iv = _generateRandom(12); // 12B
+    final key = Uint8List.fromList(sessionKey);
+
+    final cipher = GCMBlockCipher(AESEngine());
+    cipher.init(
+      true,
+      AEADParameters(
+        KeyParameter(key),
+        128,                        // 16B tag
+        Uint8List.fromList(iv),
+        Uint8List.fromList([]),     // no AAD
+      ),
+    );
+
+    final encrypted = cipher.process(Uint8List.fromList(command));
+    // encrypted = ciphertext + tag(16B)
+
+    final payload = [...iv, ...encrypted]; // iv(12B) + ciphertext + tag(16B)
+
+    // 3. Listen for response BEFORE writing
+    final completer = Completer<List<int>>();
+    final sub = _authResultChar?.onValueReceived.listen((data) {
+      if (!completer.isCompleted) completer.complete(data);
+    });
+
+    await _credExchangeChar!.write(payload, withoutResponse: false);
+
+    // 5. Wait for response
+    final result = await completer.future.timeout(const Duration(seconds: 5));
+    await sub?.cancel();
+    AppUtil().log('getAction result: $result');
+
+    // 6. Decrypt response
+    final responseIv = result.sublist(0, 12);
+    final responseCipher = result.sublist(12);
+
+    final decipher = GCMBlockCipher(AESEngine());
+    decipher.init(
+      false, // decrypt
+      AEADParameters(
+        KeyParameter(key),
+        128,
+        Uint8List.fromList(responseIv),
+        Uint8List.fromList([]),
+      ),
+    );
+
+    final decrypted = decipher.process(Uint8List.fromList(responseCipher));
+    AppUtil().log('decrypted response: $decrypted');
+
+    return decrypted[0] == 0x01; // 0x01 = granted
   }
 }
 
