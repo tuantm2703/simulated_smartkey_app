@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:simulated_smartkey_app/presentation/lock_detail_page.dart';
 import 'package:simulated_smartkey_app/presentation/scan_screen.dart';
 
 import 'ble_smartkey_page.dart';
@@ -33,6 +34,16 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: Text('Scan Screen'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const LockDetailPage(),
+                  ),
+                );
+              },
+              child: Text('Lock Detail'),
             ),
           ],
         ),
